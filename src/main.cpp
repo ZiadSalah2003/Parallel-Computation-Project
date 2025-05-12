@@ -66,7 +66,7 @@ int main(int argc, char* argv[]) {
                 cout << "Enter the upper bound for prime number finding: ";
                 cin >> prime_upper;
                  if (prime_upper < prime_lower) {
-                    cerr << "Error: Upper bound cannot be less than lower bound." << endl;
+                    cout << "Error: Upper bound cannot be less than lower bound." << endl;
                     choice = -1;
                 }
             }
@@ -247,7 +247,6 @@ int main(int argc, char* argv[]) {
 
         MPI_Barrier(MPI_COMM_WORLD); 
         double elapsed_time = end_time - start_time;
-        recordSequentialTimeIfSingleProcess(elapsed_time, world_size);
 
 
         if (choice >= 1 && choice <= 5) {
