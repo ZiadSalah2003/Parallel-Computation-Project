@@ -64,7 +64,6 @@ vector<long long> parallelPrimeFinding(long long lower_bound, long long upper_bo
                 MPI_LONG_LONG, 0, comm);
 
     if (rank == 0) {
-        sort(global_primes.begin(), global_primes.end());
         return global_primes;
     }
     return {};
