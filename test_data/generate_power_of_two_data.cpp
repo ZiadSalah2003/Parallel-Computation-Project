@@ -33,10 +33,6 @@ int main() {
         num_elements = next_power;
     }
     
-    cout << "Enter the number of processors: ";
-    cin >> num_processors;
-
-    num_elements *= num_processors;
 
     string default_filename = "bitonic_data_" + to_string(num_elements) + ".txt";
     
