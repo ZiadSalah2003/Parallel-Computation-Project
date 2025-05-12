@@ -38,7 +38,7 @@ int main() {
 
     num_elements *= num_processors;
 
-    string default_filename = "bitonic_data.txt";
+    string default_filename = "bitonic_data_" + to_string(num_elements) + ".txt";
     
     cout << "Enter output filename (default: " << default_filename << "): ";
     cin.ignore(); 

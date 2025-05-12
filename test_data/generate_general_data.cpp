@@ -16,7 +16,7 @@ int main() {
     cin.ignore();
         
     
-    string default_filename = "data.txt";
+    string default_filename = "data_"  + to_string(num_elements) + ".txt";
     
     cout << "Enter output filename (default: " << default_filename << "): ";
     getline(cin, filename);
