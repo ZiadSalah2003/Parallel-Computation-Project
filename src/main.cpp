@@ -8,7 +8,6 @@
 #include <iomanip>
 #include <numeric>
 #include <sys/stat.h>
-#include <errno.h>
 
 #include "../include/algorithms/quick_search.h"
 #include "../include/algorithms/prime_finding.h"
@@ -69,6 +68,10 @@ int main(int argc, char* argv[]) {
                     cout << "Error: Upper bound cannot be less than lower bound." << endl;
                     choice = -1;
                 }
+            }
+            else if (choice == 3 && !isPowerOfTwo(world_size)) {
+                cout << "Error: Number of processes is not a power of 2." << endl;
+                choice = -1;
             }
         }
 

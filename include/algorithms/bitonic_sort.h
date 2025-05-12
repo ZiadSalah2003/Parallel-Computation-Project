@@ -6,6 +6,7 @@
 
 using namespace std;
 
+bool isPowerOfTwo(int n);
 void compareExchange(vector<int>& arr, int i, int j, bool ascending);
 void bitonicMergeLocal(vector<int>& arr, int start, int len, bool ascending);
 void bitonicSortLocalRecursive(vector<int>& arr, int start, int len, bool ascending);
