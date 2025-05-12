@@ -37,12 +37,15 @@ vector<int> parallelRadixSort(vector<int> local_data, int global_data_size,
     for (int exp = 1; global_max / exp > 0; exp *= 10) {
         localCountingSortForRadix(local_data, exp);
         MPI_Barrier(comm);
-
     }
 
     vector<int> gathered_data = gatherDataGatherv(local_data, 0, rank, world_size, comm);
+    
     if (rank == 0) {
-        sort(gathered_data.begin(), gathered_data.end());
+        for (int exp = 1; global_max / exp > 0; exp *= 10) {
+            localCountingSortForRadix(gathered_data, exp);
+        }
     }
+    
     return gathered_data;
 }
