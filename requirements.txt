@@ -1,0 +1,3 @@
+# Project Python dependencies
+numpy
+matplotlib
