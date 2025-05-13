@@ -7,36 +7,11 @@
 
 using namespace std;
 
-int partition(vector<int>& arr, int low, int high) {
-    int pivot = arr[high];
-    int i = low - 1;
-    
-    for (int j = low; j <= high - 1; j++) {
-        if (arr[j] <= pivot) {
-            i++;
-            swap(arr[i], arr[j]);
-        }
-    }
-    swap(arr[i + 1], arr[high]);
-    return (i + 1);
-}
-void quickSort(vector<int>& arr, int low, int high) {
-    if (low < high) {
-        int pi = partition(arr, low, high);
-        quickSort(arr, low, pi - 1);
-        quickSort(arr, pi + 1, high);
-    }
-}
-void sortVector(vector<int>& arr) {
-    if (arr.empty()) return;
-    quickSort(arr, 0, arr.size() - 1);
-}
-
 vector<int> parallelSampleSort(vector<int> local_data, int global_data_size,
-                               int rank, int world_size, MPI_Comm comm) {
+                             int rank, int world_size, MPI_Comm comm) {
     if (global_data_size == 0) return gatherDataGatherv(local_data, 0, rank, world_size, comm);
 
-    sortVector(local_data);
+    sort(local_data.begin(), local_data.end());
 
     int num_splitters_per_proc = max(1, world_size -1);
     if (world_size == 1) num_splitters_per_proc = 0;
@@ -47,21 +22,19 @@ vector<int> parallelSampleSort(vector<int> local_data, int global_data_size,
             local_splitters.push_back(local_data[ (i * local_data.size()) / num_splitters_per_proc ]);
         }
     }
+
     int local_splitter_count = local_splitters.size();
     vector<int> recv_splitter_counts;
-    vector<int> splitter_displs;
-    int total_gathered_splitters = 0;
-    
-    if (rank == 0) {
-        recv_splitter_counts.resize(world_size);
-        splitter_displs.resize(world_size);
-    }
+    if (rank == 0) recv_splitter_counts.resize(world_size);
 
     MPI_Gather(&local_splitter_count, 1, MPI_INT,
                (rank == 0) ? recv_splitter_counts.data() : nullptr, 1, MPI_INT, 0, comm);
 
     vector<int> all_splitters_gathered;
+    vector<int> splitter_displs;
+    int total_gathered_splitters = 0;
     if (rank == 0) {
+        splitter_displs.resize(world_size);
         for (int i = 0; i < world_size; ++i) {
             splitter_displs[i] = (i == 0) ? 0 : splitter_displs[i-1] + recv_splitter_counts[i-1];
             total_gathered_splitters += recv_splitter_counts[i];
@@ -72,30 +45,27 @@ vector<int> parallelSampleSort(vector<int> local_data, int global_data_size,
                 (rank == 0) ? all_splitters_gathered.data() : nullptr,
                 (rank == 0) ? recv_splitter_counts.data() : nullptr,
                 (rank == 0) ? splitter_displs.data() : nullptr,
-                MPI_INT, 0, comm);    
+                MPI_INT, 0, comm);
+
     vector<int> global_splitters(world_size - 1);
     if (rank == 0) {
         if (total_gathered_splitters > 0) {
-            sortVector(all_splitters_gathered);
+            sort(all_splitters_gathered.begin(), all_splitters_gathered.end());
             all_splitters_gathered.erase(unique(all_splitters_gathered.begin(), all_splitters_gathered.end()), all_splitters_gathered.end());
             total_gathered_splitters = all_splitters_gathered.size();
 
-            if (total_gathered_splitters > 0) {                for (int i = 0; i < world_size - 1; ++i) {
-                    long long idx = ((i + 1) * total_gathered_splitters) / world_size;
-                    if (idx >= total_gathered_splitters) {
-                        idx = total_gathered_splitters - 1;
-                    }
+            if (total_gathered_splitters > 0) {
+                 for (int i = 0; i < world_size - 1; ++i) {
+                    long long  idx = ( (i + 1) * total_gathered_splitters) / world_size;
+                    if (idx >= total_gathered_splitters) idx = total_gathered_splitters -1;
                     global_splitters[i] = all_splitters_gathered[idx];
                 }
+            } else {
+                for(int i=0; i < world_size -1; ++i) global_splitters[i] = INT_MAX;
             }
-            else {
-                for(int i=0; i < world_size -1; ++i)
-                    global_splitters[i] = INT_MAX; // Using INT_MAX instead of numeric_limits
-            }
-        }
-        else if (world_size > 1) {
-            for(int i=0; i < world_size -1; ++i)
-                global_splitters[i] = INT_MAX; // Using INT_MAX instead of numeric_limits
+
+        } else if (world_size > 1) {
+            for(int i=0; i < world_size -1; ++i) global_splitters[i] = INT_MAX;
         }
     }
 
@@ -106,14 +76,14 @@ vector<int> parallelSampleSort(vector<int> local_data, int global_data_size,
     vector<vector<int>> send_buckets_alltoall(world_size);
     if (world_size == 1) {
         send_buckets_alltoall[0] = local_data;
-    }
-    else if (!local_data.empty()) {
+    } else if (!local_data.empty()){
         for (int val : local_data) {
             auto it = lower_bound(global_splitters.begin(), global_splitters.end(), val);
             int bucket_index = distance(global_splitters.begin(), it);
             send_buckets_alltoall[bucket_index].push_back(val);
         }
     }
+
     vector<int> send_counts_atoa(world_size);
     for (int i = 0; i < world_size; ++i) send_counts_atoa[i] = send_buckets_alltoall[i].size();
 
@@ -132,7 +102,6 @@ vector<int> parallelSampleSort(vector<int> local_data, int global_data_size,
         send_buffer_atoa.insert(send_buffer_atoa.end(), send_buckets_alltoall[i].begin(), send_buckets_alltoall[i].end());
         total_send_size_atoa += send_counts_atoa[i];
     }
-    
     for (int i = 0; i < world_size; ++i) {
         recv_displs_atoa[i] = total_recv_size_atoa;
         total_recv_size_atoa += recv_counts_atoa[i];
@@ -143,7 +112,7 @@ vector<int> parallelSampleSort(vector<int> local_data, int global_data_size,
                   recv_buffer_atoa.data(), recv_counts_atoa.data(), recv_displs_atoa.data(), MPI_INT,
                   comm);
 
-    sortVector(recv_buffer_atoa);
+    sort(recv_buffer_atoa.begin(), recv_buffer_atoa.end());
     local_data = recv_buffer_atoa;
 
     return gatherDataGatherv(local_data, 0, rank, world_size, comm);
