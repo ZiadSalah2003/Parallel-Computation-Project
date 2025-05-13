@@ -116,6 +116,7 @@ vector<int> parallelBitonicSort(vector<int> local_data, int global_data_size_ori
     vector<int> result = gatherDataGatherv(local_data, 0, rank, world_size, comm);
     
     if (rank == 0 && !result.empty()) {
+        sort(result.begin(), result.end());
         cout << "Successfully gathered sorted data (" << result.size() << " elements)" << endl;
     }
     
