@@ -2,7 +2,7 @@
 #include "../../include/utils/data_utils.h"
 #include <algorithm>
 #include <vector>
-#include <limits>
+#include <climits> // Changed from <limits> to access INT_MAX
 #include <mpi.h>
 
 using namespace std;
@@ -80,9 +80,8 @@ vector<int> parallelSampleSort(vector<int> local_data, int global_data_size,
             all_splitters_gathered.erase(unique(all_splitters_gathered.begin(), all_splitters_gathered.end()), all_splitters_gathered.end());
             total_gathered_splitters = all_splitters_gathered.size();
 
-            if (total_gathered_splitters > 0) {
-                 for (int i = 0; i < world_size - 1; ++i) {
-                    size_t idx = ((i + 1) * total_gathered_splitters) / world_size;
+            if (total_gathered_splitters > 0) {                for (int i = 0; i < world_size - 1; ++i) {
+                    long long idx = ((i + 1) * total_gathered_splitters) / world_size;
                     if (idx >= total_gathered_splitters) {
                         idx = total_gathered_splitters - 1;
                     }
@@ -91,12 +90,12 @@ vector<int> parallelSampleSort(vector<int> local_data, int global_data_size,
             }
             else {
                 for(int i=0; i < world_size -1; ++i)
-                    global_splitters[i] = numeric_limits<int>::max();
+                    global_splitters[i] = INT_MAX; // Using INT_MAX instead of numeric_limits
             }
         }
         else if (world_size > 1) {
             for(int i=0; i < world_size -1; ++i)
-                global_splitters[i] = numeric_limits<int>::max();
+                global_splitters[i] = INT_MAX; // Using INT_MAX instead of numeric_limits
         }
     }
 

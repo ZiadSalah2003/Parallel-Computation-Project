@@ -203,7 +203,7 @@ int main(int argc, char* argv[]) {
                 }
 
                 if (choice == 5) { 
-                    algo_name = "Sample Sort (Bonus)"; out_filename = "output/sample_sort.txt";
+                    algo_name = "Sample Sort "; out_filename = "output/sample_sort.txt";
                 }
 
                 if (rank == root_rank) cout << "\n" << algo_name << " Selected" << endl;
