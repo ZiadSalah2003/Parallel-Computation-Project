@@ -17,7 +17,6 @@ This project includes the following parallel algorithms:
 - C++ Compiler with C++11 support or higher
 - MPI Implementation (MPICH or OpenMPI)
 
-
 ## Building the Project
 
 1. Clone this repository
@@ -64,6 +63,24 @@ This script offers two options:
 1. Generate power-of-two sized data for Bitonic Sort
 2. Generate general data for other algorithms
 
+## Python Performance Analysis Setup
+
+This project requires Python dependencies for performance analysis and plotting. To avoid system package conflicts, create and activate a virtual environment before installing:
+
+```bash
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+```
+
+Once dependencies are installed, run the performance analysis script:
+
+```bash
+python3 performance_analysis.py
+```
+
+This will generate random input files under `docs/input/`, execute the parallel algorithms multiple times (controlled by `N_TRIALS` in the script), and create performance graphs in `docs/imgs/`.
+
 ## Project Structure
 
 ```
@@ -107,4 +124,6 @@ A sorting algorithm that determines splitters based on samples from all processe
 
 ## Performance Analysis
 
-Performance metrics are automatically collected and displayed after each algorithm execution. To understand detailed performance analysis, refer to the documentation in the `doc/` directory.
+Performance metrics are automatically collected and displayed after each algorithm execution. For more detailed performance analysis and graphs, see `docs/performance_analysis.md`.
+
+This section provides a high-level summary; the detailed methodology, metrics, and graphs are maintained in the dedicated analysis document.
