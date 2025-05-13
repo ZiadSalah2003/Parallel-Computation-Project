@@ -2,16 +2,61 @@
 #include "../../include/utils/data_utils.h"
 #include <algorithm>
 #include <vector>
-#include <climits> // Changed from <limits> to access INT_MAX
+#include <climits>
 #include <mpi.h>
 
 using namespace std;
+void merge(vector<int>& arr, int left, int mid, int right) {
+    int n1 = mid - left + 1;
+    int n2 = right - mid;
+    vector<int> L(n1), R(n2);
+
+    for (int i = 0; i < n1; i++){
+        L[i] = arr[left + i];
+    }
+    for (int j = 0; j < n2; j++){
+        R[j] = arr[mid + 1 + j];
+    }
+    
+    int i = 0, j = 0, k = left;
+    while (i < n1 && j < n2) {
+        if (L[i] <= R[j]) {
+            arr[k] = L[i];
+            i++;
+        } else {
+            arr[k] = R[j];
+            j++;
+        }
+        k++;
+    }
+    while (i < n1) {
+        arr[k] = L[i];
+        i++;
+        k++;
+    }
+    while (j < n2) {
+        arr[k] = R[j];
+        j++;
+        k++;
+    }
+}
+void mergeSort(vector<int>& arr, int left, int right) {
+    if (left < right) {
+        int mid = left + (right - left) / 2;
+        mergeSort(arr, left, mid);
+        mergeSort(arr, mid + 1, right);
+        merge(arr, left, mid, right);
+    }
+}
+void sortVector(vector<int>& arr) {
+    if (arr.empty()) return;
+    mergeSort(arr, 0, arr.size() - 1);
+}
 
 vector<int> parallelSampleSort(vector<int> local_data, int global_data_size,
                              int rank, int world_size, MPI_Comm comm) {
     if (global_data_size == 0) return gatherDataGatherv(local_data, 0, rank, world_size, comm);
-
-    sort(local_data.begin(), local_data.end());
+    sortVector(local_data);
 
     int num_splitters_per_proc = max(1, world_size -1);
     if (world_size == 1) num_splitters_per_proc = 0;
@@ -50,7 +95,7 @@ vector<int> parallelSampleSort(vector<int> local_data, int global_data_size,
     vector<int> global_splitters(world_size - 1);
     if (rank == 0) {
         if (total_gathered_splitters > 0) {
-            sort(all_splitters_gathered.begin(), all_splitters_gathered.end());
+            sortVector(all_splitters_gathered);
             all_splitters_gathered.erase(unique(all_splitters_gathered.begin(), all_splitters_gathered.end()), all_splitters_gathered.end());
             total_gathered_splitters = all_splitters_gathered.size();
 
@@ -112,7 +157,7 @@ vector<int> parallelSampleSort(vector<int> local_data, int global_data_size,
                   recv_buffer_atoa.data(), recv_counts_atoa.data(), recv_displs_atoa.data(), MPI_INT,
                   comm);
 
-    sort(recv_buffer_atoa.begin(), recv_buffer_atoa.end());
+    sortVector(recv_buffer_atoa);
     local_data = recv_buffer_atoa;
 
     return gatherDataGatherv(local_data, 0, rank, world_size, comm);

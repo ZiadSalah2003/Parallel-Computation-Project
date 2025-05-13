@@ -17,58 +17,80 @@ Sample Sort is a parallel sorting algorithm that uses sampling to partition data
 
 using namespace std;
 
+void merge(vector<int>& arr, int left, int mid, int right);
+void mergeSort(vector<int>& arr, int left, int right);
+void sortVector(vector<int>& arr);
 vector<int> parallelSampleSort(vector<int> local_data, int global_data_size,
                              int rank, int world_size, MPI_Comm comm);
-
-int partition(vector<int>& arr, int low, int high);
-
-void quickSort(vector<int>& arr, int low, int high);
-
-void sortVector(vector<int>& arr);
 
 #endif
 ```
 
 - **Header Guards**: Standard inclusion guards to prevent multiple inclusion.
 - **Includes**: Vector for data storage and MPI for parallel operations.
-- **Function Declaration**:
-  - `parallelSampleSort()`: The main function implementing the parallel sample sort algorithm.
+- **Function Declarations**:
+  - `merge()`: Helper function to merge two sorted subarrays
+  - `mergeSort()`: Recursive divide-and-conquer merge sort implementation
+  - `sortVector()`: Wrapper function to sort a complete vector
+  - `parallelSampleSort()`: The main function implementing the parallel sample sort algorithm
 
 ## Implementation File (`sample_sort.cpp`)
 
-### Helper Functions: Quicksort Implementation
+### Helper Functions: Merge Sort Implementation
 
 ```cpp
-int partition(vector<int>& arr, int low, int high) {
-    int pivot = arr[high];
-    int i = low - 1;
-    
-    for (int j = low; j <= high - 1; j++) {
-        if (arr[j] <= pivot) {
-            i++;
-            swap(arr[i], arr[j]);
-        }
+void merge(vector<int>& arr, int left, int mid, int right) {
+    int n1 = mid - left + 1;
+    int n2 = right - mid;
+    vector<int> L(n1), R(n2);
+
+    for (int i = 0; i < n1; i++){
+        L[i] = arr[left + i];
     }
-    swap(arr[i + 1], arr[high]);
-    return (i + 1);
+    for (int j = 0; j < n2; j++){
+        R[j] = arr[mid + 1 + j];
+    }
+    
+    int i = 0, j = 0, k = left;
+    while (i < n1 && j < n2) {
+        if (L[i] <= R[j]) {
+            arr[k] = L[i];
+            i++;
+        } else {
+            arr[k] = R[j];
+            j++;
+        }
+        k++;
+    }
+    while (i < n1) {
+        arr[k] = L[i];
+        i++;
+        k++;
+    }
+    while (j < n2) {
+        arr[k] = R[j];
+        j++;
+        k++;
+    }
 }
 
-void quickSort(vector<int>& arr, int low, int high) {
-    if (low < high) {
-        int pi = partition(arr, low, high);
-        quickSort(arr, low, pi - 1);
-        quickSort(arr, pi + 1, high);
+void mergeSort(vector<int>& arr, int left, int right) {
+    if (left < right) {
+        int mid = left + (right - left) / 2;
+        mergeSort(arr, left, mid);
+        mergeSort(arr, mid + 1, right);
+        merge(arr, left, mid, right);
     }
 }
 
 void sortVector(vector<int>& arr) {
     if (arr.empty()) return;
-    quickSort(arr, 0, arr.size() - 1);
+    mergeSort(arr, 0, arr.size() - 1);
 }
 ```
 
-- **Partition Function**: Standard quicksort partition that places elements around a pivot.
-- **Quicksort Implementation**: Recursive implementation of quicksort.
+- **Merge Function**: Combines two sorted subarrays into one sorted array.
+- **Merge Sort Implementation**: Classic divide-and-conquer recursive implementation of merge sort.
 - **Helper Wrapper**: `sortVector()` provides a simple interface to sort an entire vector.
 
 ### Main Function: `parallelSampleSort()`
@@ -95,7 +117,7 @@ sortVector(local_data);
 ```
 
 - **Empty Check**: Handles empty datasets gracefully.
-- **Local Sort**: Each process sorts its local data using the quicksort implementation.
+- **Local Sort**: Each process sorts its local data using the merge sort implementation.
 
 #### Sample Selection
 
@@ -258,7 +280,7 @@ return gatherDataGatherv(local_data, 0, rank, world_size, comm);
 ## Implementation Notes
 
 1. The sample sort algorithm consists of these main steps:
-   - Local sort
+   - Local sort using merge sort (divide-and-conquer approach)
    - Sample selection
    - Global splitter determination
    - Data redistribution (all-to-all exchange)
@@ -271,6 +293,11 @@ return gatherDataGatherv(local_data, 0, rank, world_size, comm);
    - Processes with no data
 
 3. The use of regular sampling helps achieve better load balancing by selecting more representative splitters.
+
+4. The merge sort algorithm was chosen as the local sorting method because:
+   - It offers stable O(n log n) performance regardless of input data characteristics
+   - It's a classic divide-and-conquer algorithm that divides the array in half recursively
+   - It provides predictable performance without the worst-case degradation that can affect quicksort
 
 ## Example Use Case
 
